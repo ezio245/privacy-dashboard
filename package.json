@@ -1,4 +1,16 @@
 {
+  "name": "vercel-express-app",
+  "version": "1.0.0",
+  "description": "Express app deployed on Vercel",
+  "main": "api/index.js",
+  "scripts": {
+    "start": "node api/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "serverless-http": "^3.0.0"
+  }
+}{
   "name": "my-vercel-app",
   "version": "1.0.0",
   "main": "server.js",
