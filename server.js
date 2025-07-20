@@ -1,85 +1,93 @@
+// server.js
+// PrivacyShield Authentication & API Server (Express + JWT + Bcrypt)
+
 const express = require('express');
-const cors = require('cors');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const ps = require('ps-node'); // Or another system monitoring library
-const WebSocket = require('ws');
+const cors = require('cors');
 
 const app = express();
-const router = express.Router();
-
-// Server Configuration
-app.use(cors());
 app.use(express.json());
+app.use(cors());
 
-// Mock Users Table (replace with DB)
-const users = {
-  'admin': 'securepas$word123'
-};
+// In-memory user store (for demo only; use a database in production)
+const users = [];
 
-// JWT Secret
-const SECRET = 'your-secure-secret-key';
+// JWT secret (use an environment variable in production)
+const SECRET = 'super_secret_jwt_key';
 
-app.use('/api', router);
+// Register endpoint
+app.post('/api/register', async (req, res) => {
+  const { username, password, role } = req.body;
+  if (!username || !password || !role) {
+    return res.status(400).json({ error: 'Username, password, and role are required.' });
+  }
+  // Check if user already exists
+  if (users.find(u => u.username === username)) {
+    return res.status(409).json({ error: 'Username already exists.' });
+  }
+  // Hash password and store user
+  const hash = await bcrypt.hash(password, 10);
+  users.push({ id: users.length + 1, username, password: hash, role });
+  res.json({ message: 'User registered successfully.' });
+});
 
-// Auth Routes
-router.post('/login', async (req, res) => {
+// Login endpoint
+app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
-  if (users[username] === password) {
-    const token = jwt.sign({ username, role: 'admin' }, SECRET, { expiresIn: '2h' });
-    res.json({ token });
-  } else {
-    res.status(401).json({ error: 'Invalid credentials' });
+  const user = users.find(u => u.username === username);
+  if (!user) {
+    return res.status(401).json({ error: 'Invalid credentials.' });
   }
-});
-
-// protected Routes
-router.use(async (req, res, next) => {
-  try {
-    const token = req.headers.authorization.split('')[1];
-    var decoded = await jwt.verify(token, SECRET);
-    req.user = decoded;
-    next()
-  } catch {
-    res.status(401).json({ error: 'Unauthorized' });
+  const valid = await bcrypt.compare(password, user.password);
+  if (!valid) {
+    return res.status(401).json({ error: 'Invalid credentials.' });
   }
+  // Create JWT
+  const token = jwt.sign(
+    { id: user.id, username: user.username, role: user.role },
+    SECRET,
+    { expiresIn: '2h' }
+  );
+  res.json({ token, role: user.role });
 });
 
-// System Performance Routes
-router.get('/performance', (req, res) => {
-  const metrics = getSystemMetrics(); // Implement ps-node calls
-  res.json(metrics);
-});
+// Authentication middleware
+function authenticate(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.sendStatus(401);
+  jwt.verify(token, SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+}
 
-// WebSocket Implementation (Real-Time Monitoring)
-const wss = new WebSocket.Server({ server: app });
-
-wss.on('connection', (ws) => {
-  console.log("Client Connected");
-  ws.send(JSON.stringify(getSystemMetrics()));
-  setInterval(() => {
-    ws.send(JSON.stringify(getSystemMetrics()));
-  }, 1000);
-  ws.on('close', () => console.log("Client Disconnected"));
-});
-
-// Error Handling
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send('Something broke!');
-});
-
-// Helper Function for Metrics
-function getSystemMetrics() {
-  return {
-    cpu: process.cpuUsage(),
-    memory: process.memoryUsage(),
-    uptime: process.uptime(),
-    pid: process.pid,
-    hostname: require('os').hostname()
+// Role-based access middleware
+function authorize(roles = []) {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) return res.sendStatus(403);
+    next();
   };
 }
 
-// Development Server
-app.set('port', process.env.PORT || 3001);
-const server = app.listen(app.get('port'), () => console.log(`Server running on port ${server.address().port}`));
+// Example protected route
+app.get('/api/user-data', authenticate, (req, res) => {
+  res.json({ message: `Hello, ${req.user.username}. Your role is ${req.user.role}.` });
+});
+
+// Example admin-only route
+app.get('/api/admin-data', authenticate, authorize(['admin']), (req, res) => {
+  res.json({ secret: 'This is admin-only data.' });
+});
+
+// Health check
+app.get('/', (req, res) => {
+  res.send('PrivacyShield Auth server is running.');
+});
+
+// Start server
+const PORT = 3001;
+app.listen(PORT, () => console.log(`Auth server running on port ${PORT}`));
 
