@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy-by-Design Architecture Platform</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Encryption utilities (AES-GCM) -->
+    <script>
+      window.generateKey = async function() {
+        return await (window.crypto || window.msCrypto).subtle.generateKey(
+          { name: "AES-GCM", length: 256 },
+          true,
+          ["encrypt", "decrypt"]
+        );
+      };
+      window.encryptData = async function(key, data) {
+        const encoder = new TextEncoder();
+        const encoded = encoder.encode(data);
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const ciphertext = await crypto.subtle.encrypt(
+          { name: "AES-GCM", iv: iv },
+          key,
+          encoded
+        );
+        const combined = new Uint8Array(iv.byteLength + ciphertext.byteLength);
+        combined.set(iv, 0);
+        combined.set(new Uint8Array(ciphertext), iv.byteLength);
+        return btoa(String.fromCharCode(...combined));
+      };
+      window.decryptData = async function(key, encryptedData) {
+        const combined = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
+        const iv = combined.slice(0, 12);
+        const ciphertext = combined.slice(12);
+        const decrypted = await crypto.subtle.decrypt(
+          { name: "AES-GCM", iv: iv },
+          key,
+          ciphertext
+        );
+        const decoder = new TextDecoder();
+        return decoder.decode(decrypted);
+      };
+    </script>
+</head>
+<body>
+    <!-- Login redirection (add at top of body) -->
+    <script>
+      if (!localStorage.getItem('jwt')) {
+        window.location.href = 'login.html';
+      }
+    </script>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>Privacy Platform</h2>
+                <button class="theme-toggle" id="themeToggle">🌙</button>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#dashboard" class="nav-link active" data-section="dashboard">Dashboard</a></li>
+                <li><a href="#tokenization" class="nav-link" data-section="tokenization">Data Tokenization</a></li>
+                <li><a href="#privacy-selector" class="nav-link" data-section="privacy-selector">Privacy Techniques</a></li>
+                <li><a href="#smart-contracts" class="nav-link" data-section="smart-contracts">Smart Contracts</a></li>
+                <li><a href="#consent" class="nav-link" data-section="consent">Consent Management</a></li>
+                <li><a href="#data-sharing" class="nav-link" data-section="data-sharing">Data Sharing</a></li>
+                <li><a href="#monitoring" class="nav-link" data-section="monitoring">Monitoring</a></li>
+                <li><a href="#compliance" class="nav-link" data-section="compliance">Compliance</a></li>
+                <!-- Logout Button -->
+                <li>
+                  <button id="logoutBtn" class="btn btn--outline" style="margin-top:16px;">Logout</button>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="content-section active">
+                <div class="section-header">
+                    <h1>Privacy Metrics Dashboard</h1>
+                    <p>Real-time overview of your privacy-by-design architecture</p>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="card metric-card">
+                        <div class="card__body">
+                            <h3>System Status</h3>
+                            <div class="status status--success">All Systems Operational</div>
+                            <div class="metric-value">99%</div>
+                            <div class="metric-label">Uptime</div>
+                        </div>
+                    </div>
+
+                    <div class="card metric-card">
+                        <div class="card__body">
+                            <h3>Privacy Score</h3>
+                            <div class="metric-value">95.6</div>
+                            <div class="metric-label">Overall Privacy Rating</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 95.6%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card metric-card">
+                        <div class="card__body">
+                            <h3>Active Threats</h3>
+                            <div class="metric-value threat-value">0</div>
+                            <div class="metric-label">Current Threats</div>
+                            <div class="status status--success">Secure</div>
+                        </div>
+                    </div>
+
+                    <div class="card metric-card">
+                        <div class="card__body">
+                            <h3>Data Processed</h3>
+                            <div class="metric-value">2.4M</div>
+                            <div class="metric-label">Records Today</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="card">
+                        <div class="card__body">
+                            <h3>Privacy-Utility Tradeoffs</h3>
+                            <img src="https://pplx-res.cloudinary.com/image/upload/v1749909329/pplx_code_interpreter/7fbafda3_ji8xpu.jpg"
+                                 alt="Privacy vs Utility Tradeoffs" class="chart-image">
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card__body">
+                            <h3>Compliance Scores</h3>
+                            <img src="https://pplx-res.cloudinary.com/image/upload/v1749909378/pplx_code_interpreter/81ff47c3_ftu179.jpg"
+                                 alt="Regulatory Compliance Scores" class="chart-image">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Data Tokenization Section -->
+            <section id="tokenization" class="content-section">
+                <div class="section-header">
+                    <h1>Data Tokenization Demo</h1>
+                    <p>Interactive demonstration of data tokenization techniques</p>
+                </div>
+
+                <div class="demo-container">
+                    <div class="card">
+                        <div class="card__body">
+                            <h3>Tokenization Engine</h3>
+                            <div class="tokenization-demo">
+                                <div class="input-section">
+                                    <label class="form-label">Original Sensitive Data:</label>
+                                    <textarea class="form-control" id="originalData" placeholder="Enter sensitive data to tokenize...">4532-1234-5678-9012
+John.Doe@email.com
+SSN: 123-45-6789</textarea>
+                                    <button class="btn btn--primary" id="tokenizeBtn">Tokenize Data</button>
+                                </div>
+
+                                <div class="output-section">
+                                    <label class="form-label">Tokenized Data:</label>
+                                    <textarea class="form-control" id="tokenizedData" readonly placeholder="Tokenized data will appear here..."></textarea>
+                                </div>
+                            </div>
+
+                            <div class="tokenization-options">
+                                <h4>Tokenization Method:</h4>
+                                <div class="radio-group">
+                                    <label><input type="radio" name="tokenMethod" value="format-preserving" checked> Format-Preserving</label>
+                                    <label><input type="radio" name="tokenMethod" value="vault-less"> Vault-less</label>
+                                    <label><input type="radio" name="tokenMethod" value="dynamic"> Dynamic</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Privacy Techniques Section -->
+            <section id="privacy-selector" class="content-section">
+                <div class="section-header">
+                    <h1>Privacy Technique Selector</h1>
+                    <p>Configure and preview different privacy-enhancing technologies</p>
+                </div>
+
+                <div class="technique-grid">
+                    <div class="card technique-card" data-technique="differential-privacy">
+                        <div class="card__body">
+                            <h3>Differential Privacy</h3>
+                            <div class="technique-stats">
+                                <div class="stat">
+                                    <span class="stat-label">Privacy Level:</span>
+                                    <span class="stat-value">95%</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">Utility Level:</span>
+                                    <span class="stat-value">80%</span>
+                                </div>
+                            </div>
+                            <p>Statistical analysis with mathematical privacy guarantees</p>
+                            <button class="btn btn--secondary configure-btn">Configure</button>
+                        </div>
+                    </div>
+
+                    <div class="card technique-card" data-technique="homomorphic">
+                        <div class="card__body">
+                            <h3>Homomorphic Encryption</h3>
+                            <div class="technique-stats">
+                                <div class="stat">
+                                    <span class="stat-label">Privacy Level:</span>
+                                    <span class="stat-value">98%</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">Utility Level:</span>
+                                    <span class="stat-value">70%</span>
+                                </div>
+                            </div>
+                            <p>Computation on encrypted data without decryption</p>
+                            <button class="btn btn--secondary configure-btn">Configure</button>
+                        </div>
+                    </div>
+
+                    <div class="card technique-card" data-technique="secure-mpc">
+                        <div class="card__body">
+                            <h3>Secure Multi-party Computation</h3>
+                            <div class="technique-stats">
+                                <div class="stat">
+                                    <span class="stat-label">Privacy Level:</span>
+                                    <span class="stat-value">96%</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">Utility Level:</span>
+                                    <span class="stat-value">75%</span>
+                                </div>
+                            </div>
+                            <p>Joint computation without revealing private inputs</p>
+                            <button class="btn btn--secondary configure-btn">Configure</button>
+                        </div>
+                    </div>
+
+                    <div class="card technique-card" data-technique="zero-knowledge">
+                        <div class="card__body">
+                            <h3>Zero-Knowledge Proofs</h3>
+                            <div class="technique-stats">
+                                <div class="stat">
+                                    <span class="stat-label">Privacy Level:</span>
+                                    <span class="stat-value">99%</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">Utility Level:</span>
+                                    <span class="stat-value">85%</span>
+                                </div>
+                            </div>
+                            <p>Prove knowledge without revealing information</p>
+                            <button class="btn btn--secondary configure-btn">Configure</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Smart Contracts Section -->
+            <section id="smart-contracts" class="content-section">
+                <div class="section-header">
+                    <h1>Smart Contract Governance</h1>
+                    <p>Blockchain-based policy management and automated compliance</p>
+                </div>
+
+                <div class="contract-builder">
+                    <div class="card">
+                        <div class="card__body">
+                            <h3>Policy Builder</h3>
+                            <div class="policy-form">
+                                <div class="form-group">
+                                    <label class="form-label">Data Access Level:</label>
+                                    <select class="form-control" id="accessLevel">
+                                        <option value="read">Read Only</option>
+                                        <option value="write">Read/Write</option>
+                                        <option value="admin">Administrator</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Data Categories:</label>
+                                    <div class="checkbox-group">
+                                        <label><input type="checkbox" value="personal"> Personal Data</label>
+                                        <label><input type="checkbox" value="financial"> Financial Data</label>
+                                        <label><input type="checkbox" value="health"> Health Records</label>
+                                        <label><input type="checkbox" value="biometric"> Biometric Data</label>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Retention Period (days):</label>
+                                    <input type="number" class="form-control" id="retentionPeriod" value="90">
+                                </div>
+
+                                <button class="btn btn--primary" id="deployContract">Deploy Smart Contract</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card__body">
+                            <h3>Contract Status</h3>
+                            <div class="contract-list">
+                                <div class="contract-item">
+                                    <div class="contract-info">
+                                        <strong>Data Access Policy v1.2</strong>
+                                        <div class="contract-status">
+                                            <span class="status status--success">Active</span>
+                                            <span class="contract-address">0x742d35Cc6634C0532925a3b8D404d...</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="contract-item">
+                                    <div class="contract-info">
+                                        <strong>Compliance Enforcement v2.1</strong>
+                                        <div class="contract-status">
+                                            <span class="status status--success">Active</span>
+                                            <span class="contract-address">0x895a7c42Dc874d9b8d94e2b34c2...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Consent Management Section -->
+            <section id="consent" class="content-section">
+                <div class="section-header">
+                    <h1>Consent Management</h1>
+                    <p>Granular privacy controls and consent history</p>
+                </div>
+
+                <div class="consent-dashboard">
+                    <div class="card">
+                        <div class="card__body">
+                            <h3>Privacy Controls</h3>
+                            <div class="consent-controls">
+                                <div class="consent-item">
+                                    <div class="consent-info">
+                                        <strong>Data Collection</strong>
+                                        <p>Allow collection of personal data for service improvement</p>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+
+                                <div class="consent-item">
+                                    <div class="consent-info">
+                                        <strong>Analytics & Tracking</strong>
+                                        <p>Enable analytics for usage patterns and service optimization</p>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+
+                                <div class="consent-item">
+                                    <div class="consent-info">
+                                        <strong>Third-party Sharing</strong>
+                                        <p>Allow sharing with trusted partners for enhanced services</p>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+
+                                <div class="consent-item">
+                                    <div class="consent-info">
+                                        <strong>Marketing Communications</strong>
+                                        <p>Receive personalized offers and product updates</p>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card__body">
+                            <h3>Consent History</h3>
+                            <div class="consent-history">
+                                <div class="history-item">
+                                    <div class="timestamp">2025-06-14 13:45:22</div>
+                                    <div class="action">Updated analytics consent</div>
+                                    <div class="status status--info">Modified</div>
+                                </div>
+
+                                <div class="history-item">
+                                    <div class="timestamp">2025-06-13 09:12:15</div>
+                                    <div class="action">Revoked third-party sharing</div>
+                                    <div class="status status--warning">Revoked</div>
+                                </div>
+
+                                <div class="history-item">
+                                    <div class="timestamp">2025-06-12 16:33:44</div>
+                                    <div class="action">Initial consent granted</div>
+                                    <div class="status status--success">Granted</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Data Sharing Section -->
+            <section id="data-sharing" class="content-section">
+                <div class="section-header">
+                    <h1>Cross-Platform Data Sharing</h1>
+                    <p>Secure data collaboration and federated learning</p>
+                </div>
+
+                <div class="sharing-simulator">
+                    <div class="card">
+                        <div class="card__body">
+                            <h3>Data Flow Visualization</h3>
+                            <div class="data-flow">
+                                <div class="platform-node source">
+                                    <div class="node-icon">🏢</div>
+                                    <div class="node-label">Platform A</div>
+                                    <div class="node-status active">Active</div>
+                                </div>
+
+                                <div class="flow-arrow">→</div>
+
+                                <div class="platform-node security">
+                                    <div class="node-icon">🔒</div>
+                                    <div class="node-label">Security Layer</div>
+                                    <div class="node-status processing">Processing</div>
+                                </div>
+
+                                <div class="flow-arrow">→</div>
+
+                                <div class="platform-node destination">
+                                    <div class="node-icon">🏛️</div>
+                                    <div class="node-label">Platform B</div>
+                                    <div class="node-status active">Active</div>
+                                </div>
+                            </div>
+
+                            <div class="sharing-stats">
+                                <div class="stat">
+                                    <span class="stat-label">Data Packets Transferred:</span>
+                                    <span class="stat-value" id="packetsTransferred">1,247</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">Security Checks Passed:</span>
+                                    <span class="stat-value">100%</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">Average Latency:</span>
+                                    <span class="stat-value">45ms</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Monitoring Section -->
+            <section id="monitoring" class="content-section">
+                <div class="section-header">
+                    <h1>Real-time Monitoring Center</h1>
+                    <p>Live security monitoring and anomaly detection</p>
+                </div>
+                
+                <div class="monitoring-dashboard">
+                    <div class="card">
+                        <div class="card__body">
+                            <h3>Threat Detection</h3>
+                            <div class="threat-indicators">
+                                <!-- ... your threat indicators ... -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card__body">
+                            <h3>System Performance</h3>
+                            <p>Live metrics from your local machine, updated every second.</p>
+                            <canvas id="performanceChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- Compliance Section -->
+            <section id="compliance" class="content-section">
+                <div class="section-header">
+                    <h1>Compliance Reporting</h1>
+                    <p>Automated compliance reports and audit trails</p>
+                </div>
+
+                <div class="compliance-dashboard">
+                    <div class="card">
+                        <div class="card__body">
+                            <h3>Compliance Status</h3>
+                            <div class="compliance-grid">
+                                <div class="compliance-item">
+                                    <div class="framework-name">GDPR</div>
+                                    <div class="compliance-score">98%</div>
+                                    <div class="status status--success">Compliant</div>
+                                </div>
+
+                                <div class="compliance-item">
+                                    <div class="framework-name">CCPA</div>
+                                    <div class="compliance-score">95%</div>
+                                    <div class="status status--success">Compliant</div>
+                                </div>
+
+                                <div class="compliance-item">
+                                    <div class="framework-name">HIPAA</div>
+                                    <div class="compliance-score">92%</div>
+                                    <div class="status status--success">Compliant</div>
+                                </div>
+
+                                <div class="compliance-item">
+                                    <div class="framework-name">PCI-DSS</div>
+                                    <div class="compliance-score">94%</div>
+                                    <div class="status status--success">Compliant</div>
+                                </div>
+
+                                <div class="compliance-item">
+                                    <div class="framework-name">SOX</div>
+                                    <div class="compliance-score">89%</div>
+                                    <div class="status status--warning">Needs Review</div>
+                                </div>
+                            </div>
+
+                            <div class="report-actions">
+                                <button class="btn btn--primary" id="generateReport">Generate Full Report</button>
+                                <button class="btn btn--secondary" id="exportReport">Export to PDF</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Configuration Modal -->
+    <div id="configModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Configure Privacy Technique</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="modalContent">
+                    <!-- Dynamic content will be inserted here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn--secondary modal-cancel">Cancel</button>
+                <button class="btn btn--primary modal-apply">Apply Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <!-- Logout logic (add at end of body) -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        var logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+          logoutBtn.addEventListener('click', function() {
+            localStorage.removeItem('jwt');
+            localStorage.removeItem('role');
+            window.location.href = 'login.html';
+          });
+        }
+      });
+    </script>
+</body>
+</html>
+

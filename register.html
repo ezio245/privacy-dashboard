@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Register - PrivacyShield</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="auth.css">
+</head>
+<body>
+  <main class="auth-main">
+    <div class="auth-card">
+      <h2>Register</h2>
+      <form id="registerForm">
+        <label for="registerUsername" class="form-label">Username</label>
+        <input id="registerUsername" class="form-control" required>
+        <label for="registerPassword" class="form-label">Password</label>
+        <input id="registerPassword" class="form-control" type="password" required>
+        <label for="registerRole" class="form-label">Role</label>
+        <select id="registerRole" class="form-control">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+        <button type="submit" class="btn btn--primary" style="margin-top:1rem;">Register</button>
+      </form>
+      <div id="registerError" class="auth-error"></div>
+      <div class="auth-switch">
+        <span>Already have an account?</span>
+        <a href="login.html">Login</a>
+      </div>
+    </div>
+  </main>
+  <script>
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('registerUsername').value.trim();
+      const password = document.getElementById('registerPassword').value;
+      const role = document.getElementById('registerRole').value;
+      try {
+        const res = await fetch('http://localhost:3001/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, role })
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Registration failed');
+        }
+        alert('Registration successful! Please log in.');
+        window.location.href = 'login.html';
+      } catch (err) {
+        document.getElementById('registerError').textContent = err.message;
+      }
+    });
+  </script>
+</body>
+</html>
+
